@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cara a Cara - Multiplayer</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    <style>
+        .card-flipped {
+            transform: scale(0.9);
+            opacity: 0.25;
+            filter: grayscale(100%);
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-white font-sans min-h-screen flex flex-col justify-between transition-colors duration-500">
+
+    <header id="topbar" class="bg-slate-800 p-4 text-center font-bold text-xl tracking-wider border-b-4 border-slate-700 shadow-md">
+        CARA A CARA
+    </header>
+
+    <main class="flex-grow flex flex-col items-center justify-center p-4 w-full max-w-md mx-auto">
+        
+        <div id="screen-lobby" class="w-full space-y-6 text-center">
+            <div class="bg-slate-800 p-6 rounded-2xl shadow-xl border border-slate-700">
+                <h2 class="text-2xl font-extrabold mb-4">Modo Multiplayer</h2>
+                <p class="text-slate-400 text-sm mb-6">Jogue olhando nos olhos do seu oponente. Use a tela apenas para o tabuleiro!</p>
+                
+                <div id="lobby-actions" class="space-y-4">
+                    <button onclick="createRoom()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-xl transition shadow-lg">
+                        Criar Nova Sala
+                    </button>
+                    <div id="loading-peer" class="hidden text-amber-400 font-medium animate-pulse">Gerando código da sala...</div>
+                </div>
+
+                <div id="share-zone" class="hidden mt-6 pt-6 border-t border-slate-750 space-y-4">
+                    <p class="text-green-400 font-semibold">Sala Criada! Aguardando oponente...</p>
+                    <div class="bg-slate-950 p-3 rounded-lg font-mono text-sm break-all select-all border border-slate-800" id="room-link"></div>
+                    <button onclick="copyLink()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg transition">
+                        📋 Copiar Link de Convite
+                    </button>
+                </div>
+                
+                <div id="connection-status" class="hidden mt-4 text-amber-400 font-medium animate-pulse">
+                    Conectando à sala...
+                </div>
+            </div>
+        </div>
+
+        <div id="screen-select" class="hidden w-full space-y-4 text-center">
+            <div class="bg-slate-800 p-4 rounded-xl border border-slate-750">
+                <h2 class="text-xl font-bold text-amber-400">Escolha o SEU Personagem</h2>
+                <p class="text-xs text-slate-400">Não deixe o oponente olhar sua tela!</p>
+            </div>
+            
+            <div id="select-grid" class="grid grid-cols-3 gap-3 w-full"></div>
+            
+            <button id="btn-confirm-character" disabled onclick="confirmCharacter()" class="w-full bg-slate-600 text-slate-400 font-bold py-3 px-6 rounded-xl cursor-not-allowed">
+                Selecione um Personagem
+            </button>
+        </div>
+
+        <div id="screen-game" class="hidden w-full space-y-4">
+            <div class="flex justify-between items-center bg-slate-800 p-3 rounded-xl border border-slate-700 shadow">
+                <div class="flex items-center space-x-2">
+                    <span id="my-secret-avatar" class="text-2xl"></span>
+                    <div>
+                        <p class="text-[10px] text-slate-400 uppercase tracking-wider font-bold">Seu Personagem</p>
+                        <p id="my-secret-name" class="font-bold text-sm text-white"></p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <span id="player-badge" class="px-3 py-1 rounded-full text-xs font-bold uppercase"></span>
+                </div>
+            </div>
+
+            <div id="board-grid" class="grid grid-cols-3 gap-3 w-full"></div>
+
+            <button onclick="resetGame()" class="w-full bg-slate-800 hover:bg-slate-750 text-slate-400 font-semibold py-2 rounded-xl text-xs transition border border-slate-700">
+                Sair da Partida / Reiniciar
+            </button>
+        </div>
+
+    </main>
+
+    <footer class="p-4 text-center text-xs text-slate-500 border-t border-slate-800 bg-slate-950">
+        Converse por voz • Olhe nos olhos do oponente
+    </footer>
+
+    <script>
+        // Banco de Dados de Personagens (Fictícios, leves e sem dependência de imagem externa via Emojis)
+        const characters = [
+            { id: 1, name: "Ana", img: "👩‍🦰", tags: ["Mulher", "Ruiva"] },
+            { id: 2, name: "Bruno", img: "🧔", tags: ["Homem", "Barba"] },
+            { id: 3, name: "Carlos", img: "👨‍👨", tags: ["Homem", "Bigode"] },
+            { id: 4, name: "Daniela", img: "👩‍⚕️", tags: ["Mulher", "Chapéu"] },
+            { id: 5, name: "Eduardo", img: "👨‍💼", tags: ["Homem", "Óculos"] },
+            { id: 6, name: "Felipe", img: "👦", tags: ["Homem", "Boné"] },
+            { id: 7, name: "Gabriela", img: "👩‍🦱", tags: ["Mulher", "Brinco"] },
+            { id: 8, name: "Hugo", img: "👴", tags: ["Homem", "Idoso", "Óculos"] },
+            { id: 9, name: "Igor", img: "👨‍🦲", tags: ["Homem", "Careca"] },
+            { id: 10, name: "Julia", img: "👩‍🎓", tags: ["Mulher", "Chapéu"] },
+            { id: 11, name: "Lucas", img: "👱‍♂️", tags: ["Homem", "Loiro"] },
+            { id: 12, name: "Marina", img: "👩‍🦲", tags: ["Mulher", "Careca"] }
+        ];
+
+        let peer = null;
+        let conn = null;
+        let myRole = ''; // 'red' (player 1 / host) ou 'blue' (player 2 / guest)
+        let selectedCharacterId = null;
+        let opponentReady = false;
+
+        // Elementos DOM
+        const screenLobby = document.getElementById('screen-lobby');
+        const screenSelect = document.getElementById('screen-select');
+        const screenGame = document.getElementById('screen-game');
+        const topbar = document.getElementById('topbar');
+
+        // Checar se já possui código de sala na URL ao abrir
+        const urlParams = new URLSearchParams(window.location.search);
+        const roomCode = urlParams.get('room');
+
+        if (roomCode) {
+            myRole = 'blue';
+            initGuest(roomCode);
+        }
+
+        // ==========================================
+        // REDE & CONEXÃO (PEERJS)
+        // ==========================================
+
+        function createRoom() {
+            document.getElementById('loading-peer').classList.remove('hidden');
+            const generatedCode = 'C2C-' + Math.random().toString(36).substring(2, 7).toUpperCase();
+            
+            peer = new Peer(generatedCode);
+
+            peer.on('open', (id) => {
+                myRole = 'red';
+                document.getElementById('loading-peer').classList.add('hidden');
+                document.getElementById('lobby-actions').classList.add('hidden');
+                
+                const shareLink = window.location.origin + window.location.pathname + '?room=' + id;
+                document.getElementById('room-link').innerText = shareLink;
+                document.getElementById('share-zone').classList.remove('hidden');
+                setupTheme();
+            });
+
+            peer.on('connection', (connection) => {
+                conn = connection;
+                handleEvents();
+            });
+        }
+
+        function initGuest(code) {
+            document.getElementById('lobby-actions').classList.add('hidden');
+            document.getElementById('connection-status').classList.remove('hidden');
+            
+            peer = new Peer();
+            
+            peer.on('open', () => {
+                conn = peer.connect(code);
+                handleEvents();
+            });
+        }
+
+        function handleEvents() {
+            conn.on('open', () => {
+                setupTheme();
+                startSelectionStage();
+            });
+
+            conn.on('data', (data) => {
+                if (data.type === 'OPPONENT_READY') {
+                    opponentReady = true;
+                    checkBothReady();
+                }
+            });
+
+            conn.on('close', () => {
+                alert('Oponente desconectou.');
+                resetGame();
+            });
+        }
+
+        function copyLink() {
+            const text = document.getElementById('room-link').innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                alert('Link copiado para a área de transferência!');
+            });
+        }
+
+        // ==========================================
+        // LOGICA VISUAL E CONFIGURAÇÃO DE TELA
+        // ==========================================
+
+        function setupTheme() {
+            if (myRole === 'red') {
+                topbar.className = "bg-red-900 p-4 text-center font-bold text-xl tracking-wider border-b-4 border-red-700 shadow-md text-white";
+                document.getElementById('player-badge').className = "px-3 py-1 rounded-full text-xs font-bold uppercase bg-red-600 text-white";
+                document.getElementById('player-badge').innerText = "Jogador Vermelho";
+            } else {
+                topbar.className = "bg-blue-900 p-4 text-center font-bold text-xl tracking-wider border-b-4 border-blue-700 shadow-md text-white";
+                document.getElementById('player-badge').className = "px-3 py-1 rounded-full text-xs font-bold uppercase bg-blue-600 text-white";
+                document.getElementById('player-badge').innerText = "Jogador Azul";
+            }
+        }
+
+        function startSelectionStage() {
+            screenLobby.classList.add('hidden');
+            screenSelect.classList.remove('hidden');
+            
+            const selectGrid = document.getElementById('select-grid');
+            selectGrid.innerHTML = '';
+
+            characters.forEach(char => {
+                const card = document.createElement('div');
+                card.id = `select-card-${char.id}`;
+                card.className = "bg-slate-800 p-3 rounded-xl border-2 border-slate-700 flex flex-col items-center justify-center cursor-pointer active:scale-95 transition-all";
+                card.onclick = () => selectCharacter(char.id);
+                card.innerHTML = `
+                    <span class="text-4xl mb-1">${char.img}</span>
+                    <span class="text-xs font-bold">${char.name}</span>
+                `;
+                selectGrid.appendChild(card);
+            });
+        }
+
+        function selectCharacter(id) {
+            if (selectedCharacterId) {
+                document.getElementById(`select-card-${selectedCharacterId}`).classList.remove('border-amber-400', 'bg-slate-700');
+            }
+            selectedCharacterId = id;
+            document.getElementById(`select-card-${id}`).classList.add('border-amber-400', 'bg-slate-700');
+            
+            const btn = document.getElementById('btn-confirm-character');
+            btn.disabled = false;
+            btn.className = "w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold py-3 px-6 rounded-xl cursor-pointer transition shadow-lg text-md";
+            btn.innerText = "Confirmar Meu Personagem";
+        }
+
+        function confirmCharacter() {
+            conn.send({ type: 'OPPONENT_READY' });
+            
+            // Trava interface aguardando oponente
+            const btn = document.getElementById('btn-confirm-character');
+            btn.disabled = true;
+            btn.className = "w-full bg-slate-700 text-slate-400 font-bold py-3 px-6 rounded-xl cursor-not-allowed animate-pulse";
+            btn.innerText = "Aguardando oponente escolher...";
+
+            // Desabilita cliques na seleção
+            characters.forEach(char => {
+                document.getElementById(`select-card-${char.id}`).onclick = null;
+            });
+
+            checkBothReady();
+        }
+
+        function checkBothReady() {
+            // Se eu já confirmei e o oponente também
+            const myChoiceConfirmed = document.getElementById('btn-confirm-character').disabled && !opponentReady;
+            if (selectedCharacterId && opponentReady) {
+                buildGameBoard();
+            }
+        }
+
+        function buildGameBoard() {
+            screenSelect.classList.add('hidden');
+            screenGame.classList.remove('hidden');
+
+            // Define cabeçalho secreto do jogador
+            const myChar = characters.find(c => c.id === selectedCharacterId);
+            document.getElementById('my-secret-avatar').innerText = myChar.img;
+            document.getElementById('my-secret-name').innerText = myChar.name;
+
+            // Renderiza Tabuleiro de Palpites
+            const boardGrid = document.getElementById('board-grid');
+            boardGrid.innerHTML = '';
+
+            characters.forEach(char => {
+                const card = document.createElement('div');
+                card.id = `board-card-${char.id}`;
+                // Cor de destaque da borda baseada no jogador
+                const borderHover = myRole === 'red' ? 'hover:border-red-500' : 'hover:border-blue-500';
+                
+                card.className = `bg-slate-800 p-3 rounded-xl border-2 border-slate-700 flex flex-col items-center justify-center cursor-pointer transition-all ${borderHover}`;
+                card.onclick = () => toggleCard(char.id);
+                card.innerHTML = `
+                    <span class="text-4xl mb-1">${char.img}</span>
+                    <span class="text-xs font-bold">${char.name}</span>
+                `;
+                boardGrid.appendChild(card);
+            });
+        }
+
+        function toggleCard(id) {
+            const card = document.getElementById(`board-card-${id}`);
+            card.classList.toggle('card-flipped');
+        }
+
+        function resetGame() {
+            window.location.href = window.location.origin + window.location.pathname;
+        }
+    </script>
+</body>
+</html>
