@@ -17,12 +17,19 @@
 </head>
 <body class="bg-slate-900 text-white font-sans min-h-screen flex flex-col justify-between transition-colors duration-500">
 
-    <header id="topbar" class="bg-slate-800 p-3 text-center border-b-4 border-slate-700 shadow-md sticky top-0 z-40">
-        <h1 class="font-extrabold text-lg tracking-wider">CARA A CARA</h1>
-        <div class="flex justify-center items-center space-x-4 text-xs mt-1 font-mono">
-            <span class="text-red-400 font-bold">Vermelho: <span id="score-red">0</span></span>
-            <span class="text-slate-400">X</span>
-            <span class="text-blue-400 font-bold">Azul: <span id="score-blue">0</span></span>
+    <header id="topbar" class="bg-slate-800 p-3 border-b-4 border-slate-700 shadow-md sticky top-0 z-40">
+        <div class="flex justify-between items-center max-w-md mx-auto relative">
+            <div class="flex-grow text-center">
+                <h1 class="font-extrabold text-lg tracking-wider">CARA A CARA</h1>
+                <div class="flex justify-center items-center space-x-4 text-xs mt-1 font-mono">
+                    <span class="text-red-400 font-bold">Vermelho: <span id="score-red">0</span></span>
+                    <span class="text-slate-400">X</span>
+                    <span class="text-blue-400 font-bold">Azul: <span id="score-blue">0</span></span>
+                </div>
+            </div>
+            <button id="btn-leave" onclick="leaveRoom()" class="hidden absolute right-0 top-1/2 -translate-y-1/2 bg-slate-700 hover:bg-red-600 text-white text-[11px] font-bold py-1.5 px-2.5 rounded-lg transition shadow">
+                Sair
+            </button>
         </div>
     </header>
 
@@ -123,7 +130,6 @@
     </footer>
 
     <script>
-        // Banco de dados com exatamente 24 personagens utilizando sementes estáveis da API DiceBear
         const characters = [
             { id: 1, name: "Ana", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Ana" },
             { id: 2, name: "André", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Andre" },
@@ -153,7 +159,7 @@
 
         let peer = null;
         let conn = null;
-        let myRole = ''; // 'red' (host) ou 'blue' (guest)
+        let myRole = ''; 
         let selectedCharacterId = null;
         let opponentCharacterId = null;
         let isGuessMode = false;
@@ -162,36 +168,45 @@
         let localPlayerReadyForNext = false;
         let opponentReadyForNext = false;
 
-        // Elementos DOM
         const screenLobby = document.getElementById('screen-lobby');
         const screenSelect = document.getElementById('screen-select');
         const screenGame = document.getElementById('screen-game');
         const topbar = document.getElementById('topbar');
 
-        // Monitorar parâmetros da URL (Para o celular 2 entrar via link)
+        // Inicialização com checagem de papel e persistência
         const urlParams = new URLSearchParams(window.location.search);
         const roomCode = urlParams.get('room');
 
         if (roomCode) {
-            myRole = 'blue';
-            initGuest(roomCode);
+            if (roomCode === localStorage.getItem('hosted_room')) {
+                myRole = 'red';
+                initHost(roomCode);
+            } else {
+                myRole = 'blue';
+                initGuest(roomCode);
+            }
         }
 
         // ==========================================
-        // SISTEMA DE CONEXÃO E P2P (PEERJS)
+        // SISTEMA DE GESTÃO DE SALAS & REDIRECIONAMENTO
         // ==========================================
 
         function createRoom() {
-            document.getElementById('loading-peer').classList.remove('hidden');
             const generatedCode = 'CARA-' + Math.random().toString(36).substring(2, 7).toUpperCase();
+            localStorage.setItem('hosted_room', generatedCode);
+            // Redireciona de fato para atualizar a URL e fixar a sala
+            window.location.href = window.location.origin + window.location.pathname + '?room=' + generatedCode;
+        }
+
+        function initHost(code) {
+            document.getElementById('lobby-actions').classList.add('hidden');
+            document.getElementById('loading-peer').classList.remove('hidden');
+            document.getElementById('btn-leave').classList.remove('hidden');
             
-            peer = new Peer(generatedCode);
+            peer = new Peer(code);
 
             peer.on('open', (id) => {
-                myRole = 'red';
                 document.getElementById('loading-peer').classList.add('hidden');
-                document.getElementById('lobby-actions').classList.add('hidden');
-                
                 const shareLink = window.location.origin + window.location.pathname + '?room=' + id;
                 document.getElementById('room-link').innerText = shareLink;
                 document.getElementById('share-zone').classList.remove('hidden');
@@ -202,11 +217,19 @@
                 conn = connection;
                 handleEvents();
             });
+
+            peer.on('error', (err) => {
+                if (err.type === 'unavailable-id') {
+                    alert('Esta sala expirou ou já está ativa.');
+                    leaveRoom();
+                }
+            });
         }
 
         function initGuest(code) {
             document.getElementById('lobby-actions').classList.add('hidden');
             document.getElementById('connection-status').classList.remove('hidden');
+            document.getElementById('btn-leave').classList.remove('hidden');
             
             peer = new Peer();
             
@@ -214,6 +237,13 @@
                 conn = peer.connect(code);
                 handleEvents();
             });
+        }
+
+        function leaveRoom() {
+            localStorage.removeItem('hosted_room');
+            if (conn) conn.close();
+            if (peer) peer.destroy();
+            window.location.href = window.location.origin + window.location.pathname;
         }
 
         function handleEvents() {
@@ -236,7 +266,7 @@
 
             conn.on('close', () => {
                 alert('Oponente desconectou da partida.');
-                window.location.href = window.location.origin + window.location.pathname;
+                leaveRoom();
             });
         }
 
@@ -248,16 +278,16 @@
         }
 
         // ==========================================
-        // CUSTOMIZAÇÃO VISUAL BASEADA NO JOGADOR
+        // SELEÇÃO, TABULEIRO E MECÂNICAS
         // ==========================================
 
         function setupTheme() {
             if (myRole === 'red') {
-                topbar.className = "bg-red-950 p-3 text-center border-b-4 border-red-700 shadow-md sticky top-0 z-40 text-white";
+                topbar.className = "bg-red-950 p-3 border-b-4 border-red-700 shadow-md sticky top-0 z-40 text-white";
                 document.getElementById('player-badge').className = "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-red-600 text-white shadow";
                 document.getElementById('player-badge').innerText = "Tabuleiro Vermelho";
             } else {
-                topbar.className = "bg-blue-950 p-3 text-center border-b-4 border-blue-700 shadow-md sticky top-0 z-40 text-white";
+                topbar.className = "bg-blue-950 p-3 border-b-4 border-blue-700 shadow-md sticky top-0 z-40 text-white";
                 document.getElementById('player-badge').className = "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-blue-600 text-white shadow";
                 document.getElementById('player-badge').innerText = "Tabuleiro Azul";
             }
@@ -268,10 +298,6 @@
             document.getElementById('score-red').innerText = score.red;
             document.getElementById('score-blue').innerText = score.blue;
         }
-
-        // ==========================================
-        // FASE 1: SELEÇÃO DE PERSONAGENS
-        // ==========================================
 
         function startSelectionStage() {
             screenLobby.classList.add('hidden');
@@ -294,7 +320,6 @@
                 selectGrid.appendChild(card);
             });
 
-            // Reseta botões
             const btn = document.getElementById('btn-confirm-character');
             btn.disabled = true;
             btn.className = "w-full bg-slate-700 text-slate-400 font-bold py-3 px-6 rounded-xl cursor-not-allowed text-sm";
@@ -315,7 +340,6 @@
         }
 
         function confirmCharacter() {
-            // Compartilha a escolha secretamente via P2P
             conn.send({ type: 'SYNC_CHARACTER', id: selectedCharacterId });
             
             const btn = document.getElementById('btn-confirm-character');
@@ -323,7 +347,6 @@
             btn.className = "w-full bg-slate-800 text-slate-500 font-bold py-3 px-6 rounded-xl cursor-not-allowed animate-pulse text-sm";
             btn.innerText = "Aguardando oponente escolher...";
 
-            // Bloqueia novos cliques
             characters.forEach(char => {
                 document.getElementById(`select-card-${char.id}`).onclick = null;
             });
@@ -337,10 +360,6 @@
                 buildGameBoard();
             }
         }
-
-        // ==========================================
-        // FASE 2: TABULEIRO EM JOGO
-        // ==========================================
 
         function buildGameBoard() {
             screenSelect.classList.add('hidden');
@@ -374,12 +393,10 @@
             if (isGuessMode) {
                 triggerFinalAccusation(id);
             } else {
-                // Modo padrão: apenas vira/abaixa a carta fisicamente
                 document.getElementById(`board-card-${id}`).classList.toggle('card-flipped');
             }
         }
 
-        // Modifica o comportamento do clique para "Modo de Acusação"
         function toggleGuessMode() {
             isGuessMode = !isGuessMode;
             updateGuessButtonUI();
@@ -396,14 +413,8 @@
             }
         }
 
-        // ==========================================
-        // SISTEMA DE ACUSAÇÃO (CERTO OU ERRADO) + FIM DE JOGO
-        // ==========================================
-
         function triggerFinalAccusation(id) {
             const targetChar = characters.find(c => c.id === id);
-            
-            // Pergunta de confirmação de segurança (Evitar cliques errados)
             const confirmAction = confirm(`Você está prestes a fazer seu Palpite Final.\nTem certeza que o personagem secreto do seu oponente é o(a) ${targetChar.name}?`);
             
             if (!confirmAction) {
@@ -415,20 +426,17 @@
             let winner = '';
             const opponentRole = myRole === 'red' ? 'blue' : 'red';
 
-            // Verificação automática P2P de acerto ou erro
             if (id === opponentCharacterId) {
                 alert(`🎉 SENSACIONAL! Você acertou! O personagem secreto era o(a) ${targetChar.name}.`);
-                winner = myRole; // Eu ganhei
+                winner = myRole;
             } else {
                 alert(`❌ ERRADO! O personagem do oponente não era o(a) ${targetChar.name}.\nPor errar o Palpite Final, você perdeu a partida!`);
-                winner = opponentRole; // Oponente ganhou
+                winner = opponentRole;
             }
 
-            // Define quem é quem para a tela de revelação
             const redChar = myRole === 'red' ? selectedCharacterId : opponentCharacterId;
             const blueChar = myRole === 'blue' ? selectedCharacterId : opponentCharacterId;
 
-            // Envia o veredito definitivo para o oponente
             conn.send({ 
                 type: 'GAME_OVER', 
                 winner: winner,
@@ -440,12 +448,10 @@
         }
 
         function applyGameOver(winner, redCharId, blueCharId) {
-            // Atualiza placar local
             if (winner === 'red') score.red++;
             if (winner === 'blue') score.blue++;
             updateScoreboardVisual();
 
-            // Configura a tela final (Modal)
             const box = document.getElementById('game-over-box');
             const title = document.getElementById('game-over-title');
             const msg = document.getElementById('game-over-msg');
@@ -462,7 +468,6 @@
                 msg.innerText = "Não foi dessa vez. Seu oponente decifrou sua expressão corporal primeiro!";
             }
 
-            // Exibe quem cada um era na revelação do modal
             const rChar = characters.find(c => c.id === redCharId);
             const bChar = characters.find(c => c.id === blueCharId);
 
@@ -471,7 +476,6 @@
             document.getElementById('reveal-blue-img').src = bChar.url;
             document.getElementById('reveal-blue-name').innerText = bChar.name;
 
-            // Reseta controles do "Novo Jogo"
             localPlayerReadyForNext = false;
             opponentReadyForNext = false;
             
@@ -480,13 +484,8 @@
             btnNext.className = "w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-lg transition text-sm cursor-pointer";
             document.getElementById('waiting-opponent-next').classList.add('hidden');
 
-            // Mostra o Modal
             document.getElementById('game-over-screen').classList.remove('hidden');
         }
-
-        // ==========================================
-        // REINICIALIZAÇÃO PARA NOVO JOGO (MANTÉM PLACAR)
-        // ==========================================
 
         function requestNewGame() {
             localPlayerReadyForNext = true;
@@ -502,7 +501,6 @@
 
         function checkNextGameTransition() {
             if (localPlayerReadyForNext && opponentReadyForNext) {
-                // Limpa variáveis de rodada e volta para a seleção
                 selectedCharacterId = null;
                 opponentCharacterId = null;
                 startSelectionStage();
