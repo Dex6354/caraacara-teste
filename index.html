@@ -4,9 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cara a Cara - Clássico Multiplayer</title>
-    <!-- Tailwind CSS para um layout moderno e responsivo -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- PeerJS para conexão P2P direta e segura entre celulares -->
     <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
     <style>
         .card-flipped {
@@ -19,10 +17,8 @@
 </head>
 <body class="bg-slate-900 text-white font-sans min-h-screen flex flex-col justify-between transition-colors duration-500">
 
-    <!-- Topbar com Identificação de Cor e Placar Dinâmico -->
     <header id="topbar" class="bg-slate-800 p-3 text-center border-b-4 border-slate-700 shadow-md sticky top-0 z-40">
         <h1 class="font-extrabold text-lg tracking-wider">CARA A CARA</h1>
-        <!-- Placar -->
         <div class="flex justify-center items-center space-x-4 text-xs mt-1 font-mono">
             <span class="text-red-400 font-bold">Vermelho: <span id="score-red">0</span></span>
             <span class="text-slate-400">X</span>
@@ -32,7 +28,6 @@
 
     <main class="flex-grow flex flex-col items-center justify-center p-3 w-full max-w-md mx-auto mb-12">
         
-        <!-- TELA 1: LOBBY / CONEXÃO -->
         <div id="screen-lobby" class="w-full space-y-6 text-center">
             <div class="bg-slate-800 p-6 rounded-2xl shadow-xl border border-slate-700">
                 <h2 class="text-xl font-extrabold mb-2">Modo Multiplayer Sem Chat</h2>
@@ -45,7 +40,6 @@
                     <div id="loading-peer" class="hidden text-amber-400 text-xs font-medium animate-pulse">Conectando ao servidor de salas...</div>
                 </div>
 
-                <!-- Painel de Compartilhamento -->
                 <div id="share-zone" class="hidden mt-6 pt-6 border-t border-slate-700 space-y-4">
                     <p class="text-green-400 text-sm font-semibold">Sala Criada! Envie o link para o oponente:</p>
                     <div class="bg-slate-950 p-3 rounded-lg font-mono text-xs break-all select-all border border-slate-800" id="room-link"></div>
@@ -60,7 +54,6 @@
             </div>
         </div>
 
-        <!-- TELA 2: SELEÇÃO DE PERSONAGEM (22 Personagens) -->
         <div id="screen-select" class="hidden w-full space-y-4 text-center">
             <div class="bg-slate-800 p-3 rounded-xl border border-slate-700">
                 <h2 class="text-base font-bold text-amber-400">Escolha o SEU Personagem Secreto</h2>
@@ -74,9 +67,7 @@
             </button>
         </div>
 
-        <!-- TELA 3: TABULEIRO PRINCIPAL -->
         <div id="screen-game" class="hidden w-full space-y-3">
-            <!-- Info do Personagem Escolhido -->
             <div class="flex justify-between items-center bg-slate-800 p-2.5 rounded-xl border border-slate-700 shadow">
                 <div class="flex items-center space-x-3">
                     <img id="my-secret-avatar" src="" class="w-10 h-10 bg-slate-700 rounded-full border border-slate-600" />
@@ -90,16 +81,13 @@
                 </div>
             </div>
 
-            <!-- Botão de Acusação / Palpite Final -->
             <button id="btn-guess-mode" onclick="toggleGuessMode()" class="w-full bg-slate-800 text-slate-300 font-bold py-2.5 rounded-xl text-xs transition border border-slate-700 shadow shadow-amber-500/10">
                 🎯 Dar Palpite Final (Acusar Suspeito)
             </button>
 
-            <!-- Grid do Tabuleiro de Palpites (22 personagens) -->
             <div id="board-grid" class="grid grid-cols-3 gap-2 w-full"></div>
         </div>
 
-        <!-- MODAL / TELA DE FIM DE JOGO -->
         <div id="game-over-screen" class="hidden fixed inset-0 bg-slate-950/95 z-50 flex flex-col items-center justify-center p-6 text-center animate-fade-in">
             <div class="bg-slate-900 border-2 p-6 rounded-2xl max-w-sm w-full space-y-6 shadow-2xl" id="game-over-box">
                 <h2 id="game-over-title" class="text-2xl font-black tracking-wide"></h2>
@@ -135,30 +123,30 @@
     </footer>
 
     <script>
-        // Banco de Dados estável com os 22 personagens clássicos do jogo original brasileiro
+        // Banco de dados corrigido e otimizado usando sementes puras para evitar erros de validação da API externa
         const characters = [
-            { id: 1, name: "Ana", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Ana&hairColor=f59e0b&mouth=smile" },
-            { id: 2, name: "André", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Andre&facialHair=beardLight&facialHairColor=4a5568" },
-            { id: 3, name: "Anita", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Anita&top=longHair&hairColor=2c3e50&accessories=round" },
-            { id: 4, name: "Bernardo", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Bernardo&top=shortHair&accessories=prescription02" },
-            { id: 5, name: "Carlos", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Carlos&facialHair=moustacheFancy" },
-            { id: 6, name: "Daniela", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Daniela&top=hijab" },
-            { id: 7, name: "Eduardo", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Eduardo&top=frizzle&accessories=round" },
-            { id: 8, name: "Felipe", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Felipe&top=eyepatch" },
-            { id: 9, name: "Gabriela", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Gabriela&top=curly&hairColor=b45309" },
-            { id: 10, name: "Gustavo", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Gustavo&top=hat" },
-            { id: 11, name: "Igor", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Igor&top=noHair&facialHair=beardMajestic" },
-            { id: 12, name: "Júlia", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Julia&top=bob" },
-            { id: 13, name: "Lucas", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Lucas&top=shavedSides" },
-            { id: 14, name: "Mariana", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Mariana&top=bun" },
-            { id: 15, name: "Mário", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Mario&top=shortHair&facialHair=moustacheMagnum" },
-            { id: 16, name: "Paulo", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Paulo&top=sides" },
-            { id: 17, name: "Pedro", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Pedro&top=shortHair&hairColor=e11d48" },
-            { id: 18, name: "Rafael", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Rafael&top=winterHat01" },
-            { id: 19, name: "Ricardo", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Ricardo&top=turban" },
-            { id: 20, name: "Roberto", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Roberto&top=shortHair&accessories=sunglasses" },
-            { id: 21, name: "Samuel", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Samuel&top=dreads" },
-            { id: 22, name: "Sérgio", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sergio&top=noHair&accessories=prescription01" }
+            { id: 1, name: "Ana", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Ana" },
+            { id: 2, name: "André", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Andre" },
+            { id: 3, name: "Anita", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Anita" },
+            { id: 4, name: "Bernardo", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Bernardo" },
+            { id: 5, name: "Carlos", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Carlos" },
+            { id: 6, name: "Daniela", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Daniela" },
+            { id: 7, name: "Eduardo", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Eduardo" },
+            { id: 8, name: "Felipe", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Felipe" },
+            { id: 9, name: "Gabriela", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Gabriela" },
+            { id: 10, name: "Gustavo", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Gustavo" },
+            { id: 11, name: "Igor", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Igor" },
+            { id: 12, name: "Júlia", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Julia" },
+            { id: 13, name: "Lucas", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Lucas" },
+            { id: 14, name: "Mariana", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Mariana" },
+            { id: 15, name: "Mário", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Mario" },
+            { id: 16, name: "Paulo", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Paulo" },
+            { id: 17, name: "Pedro", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Pedro" },
+            { id: 18, name: "Rafael", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Rafael" },
+            { id: 19, name: "Ricardo", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Ricardo" },
+            { id: 20, name: "Roberto", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Roberto" },
+            { id: 21, name: "Samuel", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Samuel" },
+            { id: 22, name: "Sérgio", url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sergio" }
         ];
 
         let peer = null;
