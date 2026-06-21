@@ -188,14 +188,17 @@
             // Se entrar na Home pura, gera o link imediatamente e redireciona
             const generatedCode = 'CARA-' + Math.random().toString(36).substring(2, 7).toUpperCase();
             localStorage.setItem('hosted_room', generatedCode);
-            localStorage.setItem('my_role', 'red');
             window.location.href = window.location.origin + window.location.pathname + '?room=' + generatedCode;
         } else {
             // Renderiza o ID da sala no topo
             document.getElementById('topbar-room-id').innerText = roomCode;
             
-            myRole = localStorage.getItem('my_role') || (roomCode === localStorage.getItem('hosted_room') ? 'red' : 'blue');
-            localStorage.setItem('my_role', myRole);
+            // Correção Crítica: O cargo agora é estritamente baseado no criador da sala atual
+            if (roomCode === localStorage.getItem('hosted_room')) {
+                myRole = 'red';
+            } else {
+                myRole = 'blue';
+            }
 
             if (myRole === 'red') {
                 initHost(roomCode);
@@ -321,12 +324,12 @@
 
         function leaveRoom() {
             localStorage.removeItem('hosted_room');
-            localStorage.removeItem('my_role');
             if (conn) conn.close();
             if (peer) peer.destroy();
             window.location.href = window.location.origin + window.location.pathname;
         }
 
+        // Correção do link de compartilhamento para puxar o código correto dinamicamente
         function copyLink() {
             const shareLink = window.location.origin + window.location.pathname + '?room=' + roomCode;
             navigator.clipboard.writeText(shareLink).then(() => {
