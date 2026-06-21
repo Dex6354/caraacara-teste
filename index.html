@@ -613,6 +613,9 @@
         function applyGameOver(winner, redCharId, blueCharId) {
             if (winner === 'red') score.red++;
             if (winner === 'blue') score.blue++;
+            
+            // Atualiza o placar no topo imediatamente
+            updateScoreboardVisual();
             saveGameState();
 
             const box = document.getElementById('game-over-box');
