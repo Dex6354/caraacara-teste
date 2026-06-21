@@ -100,6 +100,22 @@
             <div id="board-grid" class="grid grid-cols-3 gap-2 w-full"></div>
         </div>
 
+        <div id="confirm-modal" class="hidden fixed inset-0 bg-slate-950/80 z-50 flex flex-col items-center justify-center p-6 text-center animate-fade-in">
+            <div class="bg-slate-900 border-2 border-amber-500 p-5 rounded-2xl max-w-sm w-full space-y-4 shadow-2xl">
+                <h3 class="text-lg font-black text-amber-400 tracking-wide">CONFIRMAR PALPITE FINAL?</h3>
+                <p class="text-xs text-slate-300">Você tem certeza que o personagem secreto do seu oponente é o(a) <strong id="confirm-modal-char-name" class="text-white"></strong>?</p>
+                <p class="text-[10px] text-rose-400 bg-rose-950/30 p-2 rounded border border-rose-900/50 font-medium">Atenção: Se você errar, perderá o jogo imediatamente!</p>
+                <div class="flex space-x-3 pt-2">
+                    <button onclick="closeConfirmModal()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-bold py-2.5 rounded-xl text-xs transition">
+                        Cancelar
+                    </button>
+                    <button onclick="executeFinalAccusation()" class="flex-1 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black py-2.5 rounded-xl text-xs transition shadow-lg">
+                        Confirmar
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <div id="game-over-screen" class="hidden fixed inset-0 bg-slate-950/95 z-50 flex flex-col items-center justify-center p-6 text-center animate-fade-in">
             <div class="bg-slate-900 border-2 p-6 rounded-2xl max-w-sm w-full space-y-6 shadow-2xl" id="game-over-box">
                 <h2 id="game-over-title" class="text-2xl font-black tracking-wide"></h2>
@@ -168,6 +184,7 @@
         let selectedCharacterId = null;
         let opponentCharacterId = null;
         let isGuessMode = false;
+        let pendingAccusationId = null;
         
         let score = { red: 0, blue: 0 };
         let localPlayerReadyForNext = false;
@@ -370,6 +387,7 @@
                 screenGame.classList.add('hidden');
                 screenSelect.classList.add('hidden');
                 document.getElementById('game-over-screen').classList.add('hidden');
+                document.getElementById('confirm-modal').classList.add('hidden');
                 screenLobby.classList.remove('hidden');
                 document.getElementById('connection-status').innerText = "Oponente desconectou. Aguardando retorno...";
                 
@@ -424,6 +442,7 @@
             screenLobby.classList.add('hidden');
             screenGame.classList.add('hidden');
             document.getElementById('game-over-screen').classList.add('hidden');
+            document.getElementById('confirm-modal').classList.add('hidden');
             screenSelect.classList.remove('hidden');
             
             const selectGrid = document.getElementById('select-grid');
@@ -495,7 +514,7 @@
         }
 
         function buildGameBoard() {
-            screenLobby.classList.add('hidden'); // Correção aqui: Oculta a tela de lobby ao restaurar o jogo
+            screenLobby.classList.add('hidden'); 
             screenSelect.classList.add('hidden');
             screenGame.classList.remove('hidden');
             isGuessMode = false;
@@ -549,23 +568,31 @@
         }
 
         function triggerFinalAccusation(id) {
+            pendingAccusationId = id;
             const targetChar = characters.find(c => c.id === id);
-            const confirmAction = confirm(`Você está prestes a fazer seu Palpite Final.\nTem certeza que o personagem secreto do seu oponente é o(a) ${targetChar.name}?`);
             
-            if (!confirmAction) {
-                isGuessMode = false;
-                updateGuessButtonUI();
-                return;
-            }
+            document.getElementById('confirm-modal-char-name').innerText = targetChar.name;
+            document.getElementById('confirm-modal').classList.remove('hidden');
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirm-modal').classList.add('hidden');
+            pendingAccusationId = null;
+            isGuessMode = false;
+            updateGuessButtonUI();
+        }
+
+        function executeFinalAccusation() {
+            if (!pendingAccusationId) return;
+            const id = pendingAccusationId;
+            document.getElementById('confirm-modal').classList.add('hidden');
 
             let winner = '';
             const opponentRole = myRole === 'red' ? 'blue' : 'red';
 
             if (id === opponentCharacterId) {
-                alert(`🎉 SENSACIONAL! Você acertou! O personagem secreto era o(a) ${targetChar.name}.`);
                 winner = myRole;
             } else {
-                alert(`❌ ERRADO! O personagem do oponente não era o(a) ${targetChar.name}.\nPor errar o Palpite Final, você perdeu a partida!`);
                 winner = opponentRole;
             }
 
@@ -580,6 +607,7 @@
             });
 
             applyGameOver(winner, redChar, blueChar);
+            pendingAccusationId = null;
         }
 
         function applyGameOver(winner, redCharId, blueCharId) {
@@ -595,12 +623,12 @@
                 title.innerText = "🏆 VITÓRIA!";
                 title.className = "text-2xl font-black tracking-wide text-green-400 animate-bounce";
                 box.className = "bg-slate-900 border-2 border-green-500 p-6 rounded-2xl max-w-sm w-full space-y-6 shadow-2xl shadow-green-500/10";
-                msg.innerText = "Sua dedução e contato visual foram impecáveis!";
+                msg.innerText = "Sua dedução foi impecável! Você acertou o personagem secreto.";
             } else {
                 title.innerText = "💀 DERROTA";
                 title.className = "text-2xl font-black tracking-wide text-red-500";
                 box.className = "bg-slate-900 border-2 border-red-500 p-6 rounded-2xl max-w-sm w-full space-y-6 shadow-2xl shadow-red-500/10";
-                msg.innerText = "Não foi dessa vez. Seu oponente decifrou sua expressão corporal primeiro!";
+                msg.innerText = "O palpite final estava incorreto ou seu oponente descobriu sua identidade primeiro!";
             }
 
             const rChar = characters.find(c => c.id === redCharId);
@@ -640,7 +668,7 @@
                 opponentCharacterId = null;
                 localStorage.removeItem(`cara_my_char_${roomCode}`);
                 localStorage.removeItem(`cara_opp_char_${roomCode}`);
-                localStorage.removeItem(`cara_flipped_${roomCode}`);
+                localStorage.removeItem(`cara_flipped_${roomCode}`); // Remove o estado das cartas viradas para o novo jogo
                 startSelectionStage();
             }
         }
