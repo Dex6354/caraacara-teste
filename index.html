@@ -331,7 +331,6 @@
                 updatePresenceUI(true, true);
                 setupTheme();
                 
-                // Se o jogador deu F5 e já tinha um personagem secreto, avisa o oponente
                 if (selectedCharacterId) {
                     conn.send({ type: 'SYNC_CHARACTER', id: selectedCharacterId, isReconnect: true });
                 }
@@ -349,7 +348,6 @@
                     opponentCharacterId = data.id;
                     saveGameState();
                     
-                    // Devolve o próprio personagem se o parceiro tiver sofrido reconexão
                     if (data.isReconnect && selectedCharacterId) {
                         conn.send({ type: 'SYNC_CHARACTER', id: selectedCharacterId });
                     }
@@ -497,6 +495,7 @@
         }
 
         function buildGameBoard() {
+            screenLobby.classList.add('hidden'); // Correção aqui: Oculta a tela de lobby ao restaurar o jogo
             screenSelect.classList.add('hidden');
             screenGame.classList.remove('hidden');
             isGuessMode = false;
