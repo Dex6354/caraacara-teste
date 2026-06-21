@@ -666,9 +666,13 @@
             if (localPlayerReadyForNext && opponentReadyForNext) {
                 selectedCharacterId = null;
                 opponentCharacterId = null;
+                
+                // Limpa o tabuleiro do DOM para evitar que o salvamento automático herde as cartas viradas do jogo anterior
+                document.getElementById('board-grid').innerHTML = '';
+                
                 localStorage.removeItem(`cara_my_char_${roomCode}`);
                 localStorage.removeItem(`cara_opp_char_${roomCode}`);
-                localStorage.removeItem(`cara_flipped_${roomCode}`); // Remove o estado das cartas viradas para o novo jogo
+                localStorage.removeItem(`cara_flipped_${roomCode}`);
                 startSelectionStage();
             }
         }
