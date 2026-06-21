@@ -44,7 +44,6 @@
                     <button onclick="createRoom()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-xl transition shadow-lg text-sm">
                         Criar Nova Sala
                     </button>
-                    <div id="loading-peer" class="hidden text-amber-400 text-xs font-medium animate-pulse">Conectando ao servidor de salas...</div>
                 </div>
 
                 <div id="share-zone" class="hidden mt-6 pt-6 border-t border-slate-700 space-y-4">
@@ -56,8 +55,9 @@
                 </div>
                 
                 <div id="connection-status" class="hidden mt-4 text-amber-400 text-xs font-medium animate-pulse">
-                    Conectando à sala do oponente...
+                    Conectando / Aguardando oponente na sala...
                 </div>
+                <div id="loading-peer" class="hidden text-amber-400 text-xs font-medium animate-pulse">Configurando sala no servidor...</div>
             </div>
         </div>
 
@@ -173,28 +173,35 @@
         const screenGame = document.getElementById('screen-game');
         const topbar = document.getElementById('topbar');
 
-        // Inicialização com checagem de papel e persistência
         const urlParams = new URLSearchParams(window.location.search);
         const roomCode = urlParams.get('room');
 
+        // Inicialização inteligente baseada na URL e localStorage
         if (roomCode) {
-            if (roomCode === localStorage.getItem('hosted_room')) {
-                myRole = 'red';
+            myRole = localStorage.getItem('my_role') || (roomCode === localStorage.getItem('hosted_room') ? 'red' : 'blue');
+            localStorage.setItem('my_role', myRole);
+
+            if (myRole === 'red') {
                 initHost(roomCode);
             } else {
-                myRole = 'blue';
                 initGuest(roomCode);
             }
         }
 
+        // Limpeza expressa ao fechar/atualizar a aba para liberar o ID no servidor imediatamente
+        window.addEventListener('beforeunload', () => {
+            if (conn) conn.close();
+            if (peer) peer.destroy();
+        });
+
         // ==========================================
-        // SISTEMA DE GESTÃO DE SALAS & REDIRECIONAMENTO
+        // GESTÃO DE CONEXÕES ATIVAS
         // ==========================================
 
         function createRoom() {
             const generatedCode = 'CARA-' + Math.random().toString(36).substring(2, 7).toUpperCase();
             localStorage.setItem('hosted_room', generatedCode);
-            // Redireciona de fato para atualizar a URL e fixar a sala
+            localStorage.setItem('my_role', 'red');
             window.location.href = window.location.origin + window.location.pathname + '?room=' + generatedCode;
         }
 
@@ -202,7 +209,10 @@
             document.getElementById('lobby-actions').classList.add('hidden');
             document.getElementById('loading-peer').classList.remove('hidden');
             document.getElementById('btn-leave').classList.remove('hidden');
+            document.getElementById('connection-status').classList.remove('hidden');
             
+            if (peer) { try { peer.destroy(); } catch(e){} }
+
             peer = new Peer(code);
 
             peer.on('open', (id) => {
@@ -219,9 +229,10 @@
             });
 
             peer.on('error', (err) => {
+                // Se atualizar rápido demais, tenta reabrir a sala em loop controlado
                 if (err.type === 'unavailable-id') {
-                    alert('Esta sala expirou ou já está ativa.');
-                    leaveRoom();
+                    console.log('Liberando sala no servidor... Reatando em 2s.');
+                    setTimeout(() => initHost(code), 2000);
                 }
             });
         }
@@ -231,19 +242,19 @@
             document.getElementById('connection-status').classList.remove('hidden');
             document.getElementById('btn-leave').classList.remove('hidden');
             
+            if (peer) { try { peer.destroy(); } catch(e){} }
+
             peer = new Peer();
             
             peer.on('open', () => {
                 conn = peer.connect(code);
                 handleEvents();
             });
-        }
 
-        function leaveRoom() {
-            localStorage.removeItem('hosted_room');
-            if (conn) conn.close();
-            if (peer) peer.destroy();
-            window.location.href = window.location.origin + window.location.pathname;
+            peer.on('error', (err) => {
+                console.log('Procurando sala ativa... Tentando novamente.');
+                setTimeout(() => initGuest(code), 2000);
+            });
         }
 
         function handleEvents() {
@@ -264,10 +275,28 @@
                 }
             });
 
+            // Se o oponente cair/atualizar, preserva a tela em modo de espera sem sair da URL
             conn.on('close', () => {
-                alert('Oponente desconectou da partida.');
-                leaveRoom();
+                screenGame.classList.add('hidden');
+                screenSelect.classList.add('hidden');
+                document.getElementById('game-over-screen').classList.add('hidden');
+                screenLobby.classList.remove('hidden');
+                
+                if (myRole === 'red') {
+                    document.getElementById('share-zone').classList.remove('hidden');
+                } else {
+                    document.getElementById('connection-status').classList.remove('hidden');
+                    setTimeout(() => { if (roomCode) initGuest(roomCode); }, 2000);
+                }
             });
+        }
+
+        function leaveRoom() {
+            localStorage.removeItem('hosted_room');
+            localStorage.removeItem('my_role');
+            if (conn) conn.close();
+            if (peer) peer.destroy();
+            window.location.href = window.location.origin + window.location.pathname;
         }
 
         function copyLink() {
@@ -278,7 +307,7 @@
         }
 
         // ==========================================
-        // SELEÇÃO, TABULEIRO E MECÂNICAS
+        // MECÂNICAS VISUAIS E DE JOGO
         // ==========================================
 
         function setupTheme() {
