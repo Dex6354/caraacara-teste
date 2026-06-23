@@ -67,15 +67,15 @@
             
             <div class="bg-slate-800 p-3 rounded-xl border border-slate-700 shadow-2xl flex items-center justify-between w-full relative overflow-hidden">
                 
-                <div class="flex items-center space-x-2.5 w-5/12">
-                    <div id="p1-avatar-bg" class="w-11 h-14 rounded-lg border border-slate-600 bg-cover bg-center flex items-center justify-center overflow-hidden shrink-0 shadow bg-slate-950">
-                        <img id="p1-avatar" src="" class="w-full h-auto drop-shadow-[0_4px_4px_rgba(0,0,0,0.65)] hidden" />
+                <div class="flex items-center space-x-2 w-[44%] min-w-0">
+                    <div id="p1-avatar-bg" class="w-12 h-16 rounded-lg border border-slate-600 bg-cover bg-center flex items-center justify-center overflow-hidden shrink-0 shadow bg-slate-950">
+                        <img id="p1-avatar" src="" class="max-w-full max-h-full object-contain drop-shadow-[0_4px_4px_rgba(0,0,0,0.65)] hidden" />
                         <span id="p1-avatar-placeholder" class="text-xl font-black text-slate-600 font-mono">?</span>
                     </div>
                     <div class="flex flex-col min-w-0 leading-tight">
-                        <div class="flex items-center space-x-1">
-                            <span class="bg-slate-950 px-1.5 py-0.5 rounded text-white font-mono text-xs font-bold" id="score-red">0</span>
-                            <span class="text-red-400 font-black text-xs tracking-wide truncate">P1 (Vermelho)</span>
+                        <div class="flex items-center space-x-1 min-w-0">
+                            <span class="bg-slate-950 px-1.5 py-0.5 rounded text-white font-mono text-xs font-bold shrink-0" id="score-red">0</span>
+                            <span class="text-red-400 font-black text-xs tracking-wide whitespace-nowrap">P1 (Vermelho)</span>
                         </div>
                         <div class="flex items-center space-x-1 mt-1">
                             <span id="status-dot-p1" class="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0"></span>
@@ -84,23 +84,23 @@
                     </div>
                 </div>
 
-                <div class="w-2/12 flex justify-center items-center select-none">
+                <div class="w-[12%] flex justify-center items-center select-none shrink-0">
                     <span class="bg-gradient-to-r from-red-500 to-blue-500 text-transparent bg-clip-text font-black italic text-base tracking-widest drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">VS</span>
                 </div>
 
-                <div class="flex items-center justify-end space-x-2.5 w-5/12 text-right">
+                <div class="flex items-center justify-end space-x-2 w-[44%] min-w-0 text-right">
                     <div class="flex flex-col items-end min-w-0 leading-tight">
-                        <div class="flex items-center space-x-1 justify-end">
-                            <span class="text-blue-400 font-black text-xs tracking-wide truncate">P2 (Azul)</span>
-                            <span class="bg-slate-950 px-1.5 py-0.5 rounded text-white font-mono text-xs font-bold" id="score-blue">0</span>
+                        <div class="flex items-center space-x-1 justify-end min-w-0">
+                            <span class="text-blue-400 font-black text-xs tracking-wide whitespace-nowrap">P2 (Azul)</span>
+                            <span class="bg-slate-950 px-1.5 py-0.5 rounded text-white font-mono text-xs font-bold shrink-0" id="score-blue">0</span>
                         </div>
                         <div class="flex items-center space-x-1 mt-1 justify-end">
                             <span id="status-text-p2" class="text-[10px] text-rose-400 font-bold font-mono">Offline</span>
                             <span id="status-dot-p2" class="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0"></span>
                         </div>
                     </div>
-                    <div id="p2-avatar-bg" class="w-11 h-14 rounded-lg border border-slate-600 bg-cover bg-center flex items-center justify-center overflow-hidden shrink-0 shadow bg-slate-950">
-                        <img id="p2-avatar" src="" class="w-full h-auto drop-shadow-[0_4px_4px_rgba(0,0,0,0.65)] hidden" />
+                    <div id="p2-avatar-bg" class="w-12 h-16 rounded-lg border border-slate-600 bg-cover bg-center flex items-center justify-center overflow-hidden shrink-0 shadow bg-slate-950">
+                        <img id="p2-avatar" src="" class="max-w-full max-h-full object-contain drop-shadow-[0_4px_4px_rgba(0,0,0,0.65)] hidden" />
                         <span id="p2-avatar-placeholder" class="text-xl font-black text-slate-600 font-mono">?</span>
                     </div>
                 </div>
@@ -112,7 +112,7 @@
             </button>
 
             <button id="btn-turn" onclick="passTurn()" class="w-full font-bold py-2.5 rounded-xl text-xs transition border border-slate-700 shadow">
-                Cargando Turno...
+                Carregando Turno...
             </button>
 
             <div id="board-grid" class="grid grid-cols-4 gap-2 w-full"></div>
@@ -314,7 +314,7 @@
             const textP2 = document.getElementById('status-text-p2');
 
             if (p1Online) {
-                dotP1.className = "w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse animate-duration-1000 shrink-0";
+                dotP1.className = "w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse shrink-0";
                 textP1.innerText = "Online";
                 textP1.className = "text-green-400 font-bold font-mono text-[10px]";
             } else {
@@ -324,7 +324,7 @@
             }
 
             if (p2Online) {
-                dotP2.className = "w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse animate-duration-1000 shrink-0";
+                dotP2.className = "w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse shrink-0";
                 textP2.innerText = "Online";
                 textP2.className = "text-green-400 font-bold font-mono text-[10px]";
             } else {
@@ -425,13 +425,23 @@
                     updatePresenceUI(false, true);
                 }
                 
-                screenGame.classList.add('hidden');
-                screenSelect.classList.add('hidden');
-                document.getElementById('game-over-screen').classList.add('hidden');
-                document.getElementById('confirm-modal').classList.add('hidden');
-                document.getElementById('char-confirm-modal').classList.add('hidden');
-                screenLobby.classList.remove('hidden');
-                document.getElementById('connection-status').innerText = "Oponente desconectou. Aguardando retorno...";
+                // Se o jogo já iniciou, mantemos a tela ativa para exibir o placar com status offline
+                if (selectedCharacterId && opponentCharacterId) {
+                    const btnTurn = document.getElementById('btn-turn');
+                    if (btnTurn) {
+                        btnTurn.disabled = true;
+                        btnTurn.innerText = "⏳ OPONENTE DESCONECTADO (Aguardando retorno...)";
+                        btnTurn.className = "w-full bg-slate-800 text-rose-400 font-bold py-2.5 rounded-xl text-xs transition border border-rose-900/50 cursor-not-allowed";
+                    }
+                } else {
+                    screenGame.classList.add('hidden');
+                    screenSelect.classList.add('hidden');
+                    document.getElementById('game-over-screen').classList.add('hidden');
+                    document.getElementById('confirm-modal').classList.add('hidden');
+                    document.getElementById('char-confirm-modal').classList.add('hidden');
+                    screenLobby.classList.remove('hidden');
+                    document.getElementById('connection-status').innerText = "Oponente desconectou. Aguardando retorno...";
+                }
                 
                 if (myRole === 'blue') {
                     setTimeout(() => { if (roomCode) initGuest(roomCode); }, 2000);
@@ -636,6 +646,8 @@
 
         function updateTurnUI() {
             const btnTurn = document.getElementById('btn-turn');
+            if (!conn || !conn.open) return; // Evita sobrescrever UI caso esteja offline
+            
             if (isMyTurn) {
                 btnTurn.className = "w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-2.5 rounded-xl text-xs transition shadow-lg shadow-emerald-500/20 cursor-pointer";
                 btnTurn.innerText = "🟢 SUA VEZ (Finalizar Pergunta e Passar Vez)";
