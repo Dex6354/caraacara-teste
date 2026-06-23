@@ -74,7 +74,7 @@
             
             <div id="select-grid" class="grid grid-cols-4 gap-2 w-full text-center"></div>
             
-            <button id="btn-confirm-character" disabled onclick="confirmCharacter()" class="w-full bg-slate-700 text-slate-400 font-bold py-3 px-6 rounded-xl cursor-not-allowed text-sm">
+            <button id="btn-confirm-character" disabled class="w-full bg-slate-700 text-slate-400 font-bold py-3 px-6 rounded-xl cursor-not-allowed text-sm">
                 Selecione um Personagem acima
             </button>
         </div>
@@ -104,6 +104,25 @@
             </button>
 
             <div id="board-grid" class="grid grid-cols-4 gap-2 w-full"></div>
+        </div>
+
+        <!-- Modal de Confirmação de Seleção de Personagem -->
+        <div id="char-confirm-modal" class="hidden fixed inset-0 bg-slate-950/80 z-50 flex flex-col items-center justify-center p-6 text-center animate-fade-in">
+            <div class="bg-slate-900 border-2 border-amber-500 p-5 rounded-2xl max-w-sm w-full space-y-4 shadow-2xl">
+                <h3 class="text-lg font-black text-amber-400 tracking-wide">CONFIRMAR PERSONAGEM?</h3>
+                <div id="char-confirm-modal-bg" class="w-24 h-32 mx-auto rounded-lg border border-slate-700 bg-cover bg-center flex items-center justify-center overflow-hidden shadow-inner">
+                    <img id="char-confirm-modal-img" class="w-full h-auto drop-shadow-[0_4px_4px_rgba(0,0,0,0.65)]">
+                </div>
+                <p id="char-confirm-modal-name" class="text-sm font-bold text-white"></p>
+                <div class="flex space-x-3 pt-2">
+                    <button onclick="closeCharConfirmModal()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-bold py-2.5 rounded-xl text-xs transition">
+                        Escolher outro
+                    </button>
+                    <button onclick="executeCharacterConfirmation()" class="flex-1 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black py-2.5 rounded-xl text-xs transition shadow-lg">
+                        Confirmar
+                    </button>
+                </div>
+            </div>
         </div>
 
         <div id="confirm-modal" class="hidden fixed inset-0 bg-slate-950/80 z-50 flex flex-col items-center justify-center p-6 text-center animate-fade-in">
@@ -192,6 +211,7 @@
         let conn = null;
         let myRole = ''; 
         let selectedCharacterId = null;
+        let temporarySelectedId = null;
         let opponentCharacterId = null;
         let isGuessMode = false;
         let pendingAccusationId = null;
@@ -393,6 +413,7 @@
                 screenSelect.classList.add('hidden');
                 document.getElementById('game-over-screen').classList.add('hidden');
                 document.getElementById('confirm-modal').classList.add('hidden');
+                document.getElementById('char-confirm-modal').classList.add('hidden');
                 screenLobby.classList.remove('hidden');
                 document.getElementById('connection-status').innerText = "Oponente desconectou. Aguardando retorno...";
                 
@@ -449,6 +470,7 @@
             screenGame.classList.add('hidden');
             document.getElementById('game-over-screen').classList.add('hidden');
             document.getElementById('confirm-modal').classList.add('hidden');
+            document.getElementById('char-confirm-modal').classList.add('hidden');
             screenSelect.classList.remove('hidden');
             
             const selectGrid = document.getElementById('select-grid');
@@ -475,28 +497,35 @@
             btn.innerText = "Selecione um Personagem acima";
 
             if (selectedCharacterId) {
-                selectCharacter(selectedCharacterId);
+                temporarySelectedId = selectedCharacterId;
+                executeCharacterConfirmation();
             }
         }
 
         function selectCharacter(id) {
-            if (selectedCharacterId) {
-                const prev = document.getElementById(`select-card-${selectedCharacterId}`);
-                if (prev) prev.classList.remove('border-amber-400', 'bg-slate-700', 'scale-105');
-            }
-            selectedCharacterId = id;
-            const current = document.getElementById(`select-card-${id}`);
-            if (current) current.classList.add('border-amber-400', 'bg-slate-700', 'scale-105');
+            temporarySelectedId = id;
+            const char = characters.find(c => c.id === id);
+            const bgUrl = myRole === 'red' ? 'img/fundovermelho.png' : 'img/fundoazul.png';
             
-            const btn = document.getElementById('btn-confirm-character');
-            btn.disabled = false;
-            btn.className = "w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold py-3 px-6 rounded-xl cursor-pointer transition shadow-lg text-sm";
-            btn.innerText = "Confirmar Meu Personagem";
-            
-            saveGameState();
+            document.getElementById('char-confirm-modal-bg').style.backgroundImage = `url('${bgUrl}')`;
+            document.getElementById('char-confirm-modal-img').src = char.url;
+            document.getElementById('char-confirm-modal-name').innerText = char.name;
+            document.getElementById('char-confirm-modal').classList.remove('hidden');
         }
 
-        function confirmCharacter() {
+        function closeCharConfirmModal() {
+            document.getElementById('char-confirm-modal').classList.add('hidden');
+            temporarySelectedId = null;
+        }
+
+        function executeCharacterConfirmation() {
+            if (!temporarySelectedId) return;
+            selectedCharacterId = temporarySelectedId;
+            document.getElementById('char-confirm-modal').classList.add('hidden');
+
+            const current = document.getElementById(`select-card-${selectedCharacterId}`);
+            if (current) current.classList.add('border-amber-400', 'bg-slate-700', 'scale-105');
+
             conn.send({ type: 'SYNC_CHARACTER', id: selectedCharacterId });
             saveGameState();
             
@@ -709,6 +738,7 @@
             if (localPlayerReadyForNext && opponentReadyForNext) {
                 selectedCharacterId = null;
                 opponentCharacterId = null;
+                temporarySelectedId = null;
                 
                 document.getElementById('board-grid').innerHTML = '';
                 
