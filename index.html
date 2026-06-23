@@ -52,15 +52,11 @@
 
         <div id="screen-select" class="w-full space-y-4 text-center">
             <div class="bg-slate-800 p-3 rounded-xl border border-slate-700">
-                <h2 class="text-base font-bold text-amber-400">Escolha o SEU Personagem Secreto</h2>
+                <h2 id="select-screen-title" class="text-base font-bold text-amber-400">Escolha o SEU Personagem Secreto</h2>
                 <p class="text-[11px] text-slate-400">Esconda a tela! Seu oponente terá que adivinhar quem você escolheu.</p>
             </div>
             
             <div id="select-grid" class="grid grid-cols-4 gap-2 w-full text-center"></div>
-            
-            <button id="btn-confirm-character" disabled class="w-full bg-slate-700 text-slate-400 font-bold py-3 px-6 rounded-xl cursor-not-allowed text-sm">
-                Selecione um Personagem acima
-            </button>
         </div>
 
         <div id="screen-game" class="hidden w-full space-y-3">
@@ -506,8 +502,10 @@
             document.getElementById('game-over-screen').classList.add('hidden');
             document.getElementById('confirm-modal').classList.add('hidden');
             document.getElementById('char-confirm-modal').classList.add('hidden');
-            screenSelect.classList.remove('hidden'); // garante visível (ex: voltando do jogo)
+            screenSelect.classList.remove('hidden');
             
+            document.getElementById('select-screen-title').innerText = "Escolha o SEU Personagem Secreto";
+
             const selectGrid = document.getElementById('select-grid');
             selectGrid.innerHTML = '';
 
@@ -525,11 +523,6 @@
                 `;
                 selectGrid.appendChild(card);
             });
-
-            const btn = document.getElementById('btn-confirm-character');
-            btn.disabled = true;
-            btn.className = "w-full bg-slate-700 text-slate-400 font-bold py-3 px-6 rounded-xl cursor-not-allowed text-sm";
-            btn.innerText = "Selecione um Personagem acima";
         }
 
         function selectCharacter(id) {
@@ -558,10 +551,7 @@
             conn.send({ type: 'SYNC_CHARACTER', id: selectedCharacterId });
             saveGameState();
             
-            const btn = document.getElementById('btn-confirm-character');
-            btn.disabled = true;
-            btn.className = "w-full bg-slate-800 text-slate-500 font-bold py-3 px-6 rounded-xl cursor-not-allowed animate-pulse text-sm";
-            btn.innerText = "Aguardando oponente escolher...";
+            document.getElementById('select-screen-title').innerText = "Aguardando oponente escolher...";
 
             characters.forEach(char => {
                 const card = document.getElementById(`select-card-${char.id}`);
