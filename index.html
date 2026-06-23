@@ -437,6 +437,11 @@
                     conn.send({ type: 'SYNC_CHARACTER', id: selectedCharacterId, isReconnect: true });
                 }
 
+                // SE A TELA DE GAME OVER ESTIVER ATIVA MANTEM E NAO ALTERA O ESTADO
+                if (!document.getElementById('game-over-screen').classList.contains('hidden')) {
+                    return;
+                }
+
                 if (selectedCharacterId && opponentCharacterId) {
                     buildGameBoard();
                     restoreFlippedCards();
@@ -459,6 +464,11 @@
                     if (data.isReconnect && selectedCharacterId) {
                         conn.send({ type: 'SYNC_CHARACTER', id: selectedCharacterId });
                     }
+
+                    // SE A TELA DE GAME OVER ESTIVER ATIVA NAO RECONSTRUI O TABULEIRO
+                    if (!document.getElementById('game-over-screen').classList.contains('hidden')) {
+                        return;
+                    }
                     checkBothSelected();
                 } else if (data.type === 'GAME_OVER') {
                     applyGameOver(data);
@@ -478,6 +488,11 @@
                     updatePresenceUI(false, true);
                 }
                 
+                // SE A TELA DE GAME OVER ESTIVER ATIVA MANTEM E NAO MEXE NO RESTO
+                if (!document.getElementById('game-over-screen').classList.contains('hidden')) {
+                    return;
+                }
+
                 if (selectedCharacterId && opponentCharacterId) {
                     const btnTurn = document.getElementById('btn-turn');
                     if (btnTurn) {
@@ -843,6 +858,11 @@
         }
 
         function applyGameOver(data) {
+            // SE A TELA JA ESTIVER ATIVA NAO ALTERA A PONTUACAO NEM REAPLICA
+            if (!document.getElementById('game-over-screen').classList.contains('hidden')) {
+                return;
+            }
+
             const winner = data.winner;
             const redCharId = data.redCharId;
             const blueCharId = data.blueCharId;
