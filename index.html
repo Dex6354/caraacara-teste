@@ -17,7 +17,7 @@
 </head>
 <body class="bg-slate-900 text-white font-sans min-h-screen flex flex-col justify-between transition-colors duration-500">
 
-    <header id="topbar" class="bg-slate-800 p-3 border-b-4 border-slate-700 shadow-md sticky top-0 z-50">
+    <header id="topbar" class="bg-slate-800 p-3 border-b-4 border-slate-700 shadow-md sticky top-0 z-40">
         <div class="max-w-md mx-auto">
             <div class="flex justify-between items-center relative">
                 <div class="flex flex-col">
@@ -38,10 +38,10 @@
 
     <main class="flex-grow flex flex-col items-center justify-center p-3 w-full max-w-md mx-auto mb-12">
         
-        <div id="screen-lobby" class="fixed inset-0 bg-slate-950/80 z-40 flex flex-col items-center justify-center p-6 text-center" style="top: 0;">
-            <div class="bg-slate-900 border-2 border-slate-700 p-6 rounded-2xl max-w-sm w-full shadow-2xl space-y-4">
+        <div id="screen-lobby" class="w-full space-y-6 text-center">
+            <div class="bg-slate-800 p-6 rounded-2xl shadow-xl border border-slate-700">
                 <h2 class="text-xl font-extrabold mb-2">Aguardando Conexão</h2>
-                <p class="text-slate-400 text-xs">Envie o link da sala para seu oponente usando o botão de compartilhar no topo. O jogo começará assim que ele entrar!</p>
+                <p class="text-slate-400 text-xs mb-6">Envie o link da sala para seu oponente usando o botão de compartilhar no topo. O jogo começará assim que ele entrar!</p>
                 
                 <div id="connection-status" class="text-amber-400 text-xs font-medium animate-pulse">
                     Procurando sinal do servidor P2P...
@@ -50,7 +50,7 @@
             </div>
         </div>
 
-        <div id="screen-select" class="w-full space-y-4 text-center">
+        <div id="screen-select" class="hidden w-full space-y-4 text-center">
             <div class="bg-slate-800 p-3 rounded-xl border border-slate-700">
                 <h2 class="text-base font-bold text-amber-400">Escolha o SEU Personagem Secreto</h2>
                 <p class="text-[11px] text-slate-400">Esconda a tela! Seu oponente terá que adivinhar quem você escolheu.</p>
@@ -274,23 +274,6 @@
             }
         }
 
-        function preRenderSelectGrid() {
-            const selectGrid = document.getElementById('select-grid');
-            if (selectGrid.children.length > 0) return;
-            characters.forEach(char => {
-                const card = document.createElement('div');
-                card.id = `select-card-${char.id}`;
-                card.className = "bg-slate-800 p-1 rounded-xl border border-slate-700 flex flex-col items-center justify-center shadow";
-                card.innerHTML = `
-                    <div style="background-image: url('img/fundovermelho.png'); background-size: cover; background-position: center;" class="w-full rounded-lg border border-slate-700 overflow-hidden text-center">
-                        <img src="${char.url}" class="w-full h-auto drop-shadow-[0_4px_4px_rgba(0,0,0,0.65)]" loading="lazy" />
-                    </div>
-                `;
-                selectGrid.appendChild(card);
-            });
-        }
-        preRenderSelectGrid();
-
         const urlParams = new URLSearchParams(window.location.search);
         let roomCode = urlParams.get('room');
 
@@ -488,9 +471,9 @@
             UX_THEME_BG = myRole === 'red' ? 'img/fundovermelho.png' : 'img/fundoazul.png';
 
             if (myRole === 'red') {
-                topbar.className = "bg-red-950 p-3 border-b-4 border-red-700 shadow-md sticky top-0 z-50 text-white";
+                topbar.className = "bg-red-950 p-3 border-b-4 border-red-700 shadow-md sticky top-0 z-40 text-white";
             } else {
-                topbar.className = "bg-blue-950 p-3 border-b-4 border-blue-700 shadow-md sticky top-0 z-50 text-white";
+                topbar.className = "bg-blue-950 p-3 border-b-4 border-blue-700 shadow-md sticky top-0 z-40 text-white";
             }
             updateScoreboardVisual();
         }
@@ -506,7 +489,7 @@
             document.getElementById('game-over-screen').classList.add('hidden');
             document.getElementById('confirm-modal').classList.add('hidden');
             document.getElementById('char-confirm-modal').classList.add('hidden');
-            screenSelect.classList.remove('hidden'); // garante visível (ex: voltando do jogo)
+            screenSelect.classList.remove('hidden');
             
             const selectGrid = document.getElementById('select-grid');
             selectGrid.innerHTML = '';
