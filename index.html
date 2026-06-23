@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" class="w-full" content="width=device-width, initial-scale=1.0">
     <title>Cara a Cara</title>
-    
-    <!-- Meta tags para o preview da mensagem -->
-    <meta property="og:title" content="Convite para jogar Cara a Cara Multiplayer">
-    <meta property="og:image" content="https://caraacara.pages.dev/img/logowpp2.jpg">
+    <link rel="icon" type="image/jpeg" href="https://caraacara.pages.dev/img/logowpp.jpg">
+
+    <meta property="og:title" content="Jogue Cara a Cara Online">
+    <meta property="og:image" content="https://caraacara.pages.dev/img/logowpp.jpg">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
@@ -750,6 +750,8 @@
                 document.getElementById(`${p}avatar`).classList.remove('hidden');
                 document.getElementById(`${p}avatar-placeholder`).classList.add('hidden');
             });
+
+            // Removido o código que ocultava o placeholder do oponente
         }
 
         function updateRemainingCount() {
@@ -830,7 +832,7 @@
                 btn.innerText = "🎯 CLIQUE NO SUSPEITO PARA ACUSAR!";
             } else {
                 btn.className = "w-full bg-slate-800 text-slate-300 font-bold py-2.5 rounded-xl text-xs transition border border-slate-700 shadow shadow-amber-500/10";
-                btn.innerText = "🎯 Dar Palpite Final (Accusar Suspeito)";
+                btn.innerText = "🎯 Dar Palpite Final (Acusar Suspeito)";
             }
         }
 
