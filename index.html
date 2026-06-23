@@ -397,7 +397,12 @@
             document.getElementById('loading-peer').classList.remove('hidden');
             updatePresenceUI(true, false);
             
-            if (peer) { try { peer.destroy(); } catch(e){} }
+            if (peer && !peer.destroyed) {
+                document.getElementById('loading-peer').classList.add('hidden');
+                setupTheme();
+                return;
+            }
+
             peer = new Peer(code);
 
             peer.on('open', () => {
@@ -413,7 +418,7 @@
 
             peer.on('error', (err) => {
                 if (err.type === 'unavailable-id') {
-                    setTimeout(() => initHost(code), 2000);
+                    setTimeout(() => initHost(code), 500);
                 }
             });
         }
@@ -430,7 +435,7 @@
             });
 
             peer.on('error', (err) => {
-                setTimeout(() => initGuest(code), 2000);
+                setTimeout(() => initGuest(code), 500);
             });
         }
 
@@ -526,7 +531,7 @@
                 }
                 
                 if (myRole === 'blue') {
-                    setTimeout(() => { if (roomCode) initGuest(roomCode); }, 2000);
+                    setTimeout(() => { if (roomCode) initGuest(roomCode); }, 500);
                 }
             });
         }
@@ -749,7 +754,7 @@
                     bgEl.classList.add('border-slate-700');
                 }
                 document.getElementById(`${p}avatar`).classList.add('hidden');
-                document.getElementById(`${p}avatar-placeholder`).classList.remove('hidden');
+                document.getElementById(`${p}avatar-placeholder`).classList.add('hidden');
             });
         }
 
