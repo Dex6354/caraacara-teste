@@ -207,6 +207,7 @@
                     🔄 Jogar Proxima Partida (Novo Jogo)
                 </button>
                 <p id="waiting-opponent-next" class="hidden text-amber-400 text-xs animate-pulse font-medium">Aguardando oponente aceitar novo jogo...</p>
+                <p id="opponent-requested-rematch" class="hidden text-amber-400 text-xs animate-pulse font-medium">Oponente solicitou revanche...</p>
             </div>
         </div>
 
@@ -487,6 +488,7 @@
                     applyGameOver(data);
                 } else if (data.type === 'NEXT_GAME_READY') {
                     opponentReadyForNext = true;
+                    document.getElementById('opponent-requested-rematch').classList.remove('hidden');
                     checkNextGameTransition();
                 } else if (data.type === 'TURN_CHANGED') {
                     isMyTurn = true;
@@ -959,6 +961,7 @@
             btnNext.disabled = false;
             btnNext.className = "w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-lg transition text-sm cursor-pointer";
             document.getElementById('waiting-opponent-next').classList.add('hidden');
+            document.getElementById('opponent-requested-rematch').classList.add('hidden');
 
             document.getElementById('game-over-screen').classList.remove('hidden');
         }
@@ -987,6 +990,8 @@
                 localStorage.removeItem(`cara_opp_char_${roomCode}`);
                 localStorage.removeItem(`cara_flipped_${roomCode}`);
                 localStorage.removeItem(`cara_game_over_${roomCode}`);
+                
+                document.getElementById('opponent-requested-rematch').classList.add('hidden');
                 startSelectionStage();
             }
         }
